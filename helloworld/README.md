@@ -2,6 +2,8 @@
 
 A simple "Hello World" application demonstrating basic Palm OS development.
 
+<img width="505" height="773" alt="Screenshot 2025-11-17 at 9 52 38 PM" src="https://github.com/user-attachments/assets/7b53aa71-5c47-49cb-a480-4343070e2f7e" />
+
 ## Features
 
 - Displays a welcome message
