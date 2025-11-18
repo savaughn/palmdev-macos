@@ -1,0 +1,50 @@
+MIT License
+
+Copyright (c) 2025 savaughn
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Third-Party Components
+
+This repository includes setup scripts for third-party tools:
+
+### prc-tools
+- License: GNU General Public License (GPL)
+- Project: https://github.com/savaughn/prc-tools-remix
+- Pre-built binaries: https://github.com/savaughn/prc-tools-remix/releases/tag/macos-arm
+
+### Palm OS SDK
+- License: Palm OS License Agreement
+- Project: https://github.com/jichu4n/palm-os-sdk
+- Usage: Educational and non-commercial development
+
+### pilrc
+- License: GNU General Public License (GPL)
+- Installed via: Homebrew (jichu4n/palm-os tap)
+
+### pilot-link
+- License: GNU General Public License (GPL)
+- Installed via: Homebrew
+
+---
+
+The example applications (including HelloWorld) are provided as templates
+and may be freely modified and used for any purpose.

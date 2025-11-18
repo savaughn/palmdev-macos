@@ -1,0 +1,12 @@
+/*
+ * HelloWorld Resource File
+ */
+
+#include "HelloWorld.h"
+
+// Main Form
+FORM ID MainForm AT (0 0 160 160)
+USABLE
+BEGIN
+    TITLE "HelloWorld"
+END

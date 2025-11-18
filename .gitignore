@@ -1,0 +1,32 @@
+# Palm OS Development Environment
+
+# Toolchain (downloaded by setup script)
+toolchain/
+
+# Build artifacts
+build/
+*.o
+*.ro
+*.grc
+*.prc
+*.bin
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# Logs
+*.log
