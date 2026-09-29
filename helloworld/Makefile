@@ -20,12 +20,21 @@ endif
 # Set GCC environment (required for prc-tools to find libraries)
 export GCC_EXEC_PREFIX = $(TOOLCHAIN_DIR)/lib/gcc-lib/
 
-# Compiler and tools
+# SDK path (local, no palmdev-prep required)
+SDK_DIR := $(shell cd .. && pwd)/sdk/sdk-4
+
+# Compiler and tools (-B tells GCC where to find as/ld/cc1 locally, no sudo needed)
 CC = $(TOOLCHAIN_DIR)/bin/m68k-palmos-gcc
-CFLAGS = -palmos3.5 -nostdinc -O2 -Wall
-PILRC = /opt/homebrew/opt/pilrc/bin/pilrc
+CFLAGS = -B$(TOOLCHAIN_DIR)/lib/gcc-lib/m68k-palmos/2.95.3-kgpd/ -B$(TOOLCHAIN_DIR)/m68k-palmos/bin/ -B$(TOOLCHAIN_DIR)/m68k-palmos/lib/ -nostdinc -I$(SDK_DIR)/include -I$(SDK_DIR)/include/Core -I$(SDK_DIR)/include/Core/Hardware -I$(SDK_DIR)/include/Core/System -I$(SDK_DIR)/include/Core/UI -I$(SDK_DIR)/include/Dynamic -I$(SDK_DIR)/include/Libraries -O2 -Wall
+LDFLAGS = -L$(SDK_DIR)/lib
+# pilrc: look locally in the repo first, then Homebrew, then PATH
+REPO_DIR_HW := $(shell cd .. && pwd)
+PILRC := $(shell \
+    if [ -x "$(REPO_DIR_HW)/tools/pilrc" ]; then echo "$(REPO_DIR_HW)/tools/pilrc"; \
+    elif [ -x "/opt/homebrew/opt/pilrc/bin/pilrc" ]; then echo "/opt/homebrew/opt/pilrc/bin/pilrc"; \
+    else echo "pilrc"; fi)
 BUILD_PRC = $(TOOLCHAIN_DIR)/bin/build-prc
-PILOT_XFER = /opt/homebrew/opt/pilot-link/bin/pilot-xfer
+PILOT_XFER = $(HOME)/.local/bin/pilot-xfer
 
 # Build targets
 OBJS = $(BUILD_DIR)/$(APP_NAME).o

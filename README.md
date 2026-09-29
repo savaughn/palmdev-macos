@@ -1,16 +1,18 @@
 # Palm OS Development for macOS
 
-[![Build Palm OS App](https://github.com/savaughn/palmdev-macos/actions/workflows/build.yml/badge.svg)](https://github.com/savaughn/palmdev-macos/actions/workflows/build.yml)
+[![Build Palm OS App](https://github.com/User7142/palmdev-macos/actions/workflows/build.yml/badge.svg)](https://github.com/User7142/palmdev-macos/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub issues](https://img.shields.io/github/issues/savaughn/palmdev-macos)](https://github.com/savaughn/palmdev-macos/issues)
+[![GitHub issues](https://img.shields.io/github/issues/User7142/palmdev-macos)](https://github.com/User7142/palmdev-macos/issues)
 
-A complete Palm OS development environment for macOS ARM (Apple Silicon) with pre-built toolchain, SDK, and hello world template.
+A complete Palm OS development environment for macOS ARM (Apple Silicon) with pre-built toolchain, SDK, and hello world template. Supports both Palm OS 4 (68K) and Palm OS 5 (native ARM via PEAL).
+
+> This is a fork of [savaughn/palmdev-macos](https://github.com/savaughn/palmdev-macos). It adds Palm OS 5 (ARM) support via PEAL, the Palm OS SDK 5r3, a dual-target Makefile and a portable ZIP build. Background and a walkthrough: [palm2000.com](https://palm2000.com/articles/46)
 
 ## Quick Start
 
 ```bash
 # Clone this repository
-git clone https://github.com/savaughn/palmdev-macos.git palmdev-macos
+git clone https://github.com/User7142/palmdev-macos.git palmdev-macos
 cd palmdev-macos
 
 # Run setup (downloads toolchain and SDK)
@@ -25,9 +27,11 @@ make build
 
 ## What's Included
 
-- **Pre-built prc-tools** - m68k-palmos-gcc compiler for macOS ARM
-- **Palm OS SDK** - Headers and libraries for Palm OS
-- **Build tools** - pilrc, build-prc, pilot-link
+- **Pre-built prc-tools** - m68k-palmos-gcc (68K) and arm-palmos-gcc (ARM) compilers for macOS ARM
+- **Palm OS SDK** - Headers and libraries for Palm OS 4 and 5r3
+- **PEAL** - Palm Executive ARM Loader for native ARM apps on Palm OS 5
+- **Build tools** - pilrc, build-prc, peal-postlink, pilot-link
+- **Dual-target Makefile template** - Build for Palm OS 4 or 5 with one command
 - **Hello World template** - Ready-to-build sample application
 - **Automated setup** - One-command installation
 
@@ -66,12 +70,49 @@ The setup script will:
 The Makefile automatically finds the toolchain - no need to source any config files!
 
 ```bash
-# Build the hello world app
+# Build the hello world app (Palm OS 4, 68K)
 cd helloworld
 make build
 ```
 
 All build output goes to the `build/` directory.
+
+## Palm OS 5 ARM Development
+
+For native ARM performance on Palm OS 5 devices (e.g. Tungsten T3), use the dual-target Makefile template:
+
+```bash
+# Create a new project from templates
+mkdir myapp && cd myapp
+cp ../templates/Makefile .
+cp ../templates/app.rcp .
+cp ../templates/palmos5/main_arm.c .
+cp ../templates/palmos5/stub_m68k.c .
+cp ../templates/palmos5/pace.h .
+
+# Edit Makefile: set APP_NAME, CREATOR_ID, ARM_SOURCES
+
+# Build for Palm OS 5 (ARM native with 68K stub)
+make build TARGET=palmos5
+
+# Or build for Palm OS 4 (pure 68K) with the same Makefile
+cp ../templates/palmos4/main.c .
+make build TARGET=palmos4
+```
+
+### How ARM Apps Work
+
+A Palm OS 5 ARM app consists of:
+1. **68K stub** - loaded by Palm OS, detects ARM CPU, loads ARM code via PEAL
+2. **ARM binary** - native ARM code packed as `armc` resources by `peal-postlink`
+3. **PACE wrappers** (`pace.h`) - call Palm OS APIs from ARM via 68K emulator callbacks
+
+### PEAL (Palm Executive ARM Loader)
+
+PEAL loads and executes ARM code on Palm OS 5. Components:
+- `peal/postlink/` - Host tool that converts ARM ELF to Palm OS resources
+- `peal/m68k/` - 68K loader compiled into the stub
+- `peal/arm/` - ARM entry point (`pealstub.c`, must be linked first)
 
 ## Installing on Palm Device
 
@@ -131,8 +172,9 @@ After building hello world:
 
 1. **Read the source** - `helloworld/HelloWorld.c` is fully commented
 2. **Modify the UI** - Edit `helloworld/HelloWorld.rcp` for resources
-3. **Study Palm OS APIs** - Check SDK headers in `/usr/local/palmdev/sdk-3.5/include/`
-4. **Build something cool** - Games, utilities, network apps!
+3. **Study Palm OS APIs** - Check SDK headers in `sdk/sdk-4/include/` or `sdk/sdk-5r3/include/`
+4. **Try ARM development** - Use `templates/` for a Palm OS 5 ARM project
+5. **Build something cool** - Games, utilities, audio apps, MIDI synths!
 
 ## 🔄 Updating
 

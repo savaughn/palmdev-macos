@@ -13,8 +13,21 @@ UInt32 PilotMain( UInt16 cmd, void *cmdPBP, UInt16 launchFlags )
 
     if (cmd == sysAppLaunchCmdNormalLaunch) {
 
-        //  Display a string.
-        WinDrawChars( "Hello, world!", 13, 55, 60 );
+        //  Display centered text.
+        {
+            const char *line1 = "This app was built with";
+            const char *line2 = "gcc 2.95.3 on macOS";
+            const char *line3 = "(Apple Silicon)!";
+            Int16 w = 160;
+            Int16 y = 55;
+
+            WinDrawChars(line1, StrLen(line1),
+                (w - FntCharsWidth(line1, StrLen(line1))) / 2, y);
+            WinDrawChars(line2, StrLen(line2),
+                (w - FntCharsWidth(line2, StrLen(line2))) / 2, y + 15);
+            WinDrawChars(line3, StrLen(line3),
+                (w - FntCharsWidth(line3, StrLen(line3))) / 2, y + 30);
+        }
 
         //  Main event loop:
         do {

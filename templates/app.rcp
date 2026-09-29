@@ -1,0 +1,37 @@
+/*
+ * Application Resources
+ * Works for both targets (Palm OS 4 + Palm OS 5).
+ */
+
+/* Resource ID definitions */
+#define MainForm       1000
+#define AboutAlert     1100
+#define MenuAbout      1001
+#define AppMenu        1000
+
+/* Main form */
+FORM ID MainForm AT (0 0 160 160)
+USABLE
+MENUID AppMenu
+BEGIN
+    TITLE "MyApp"
+END
+
+/* Menu */
+MENU ID AppMenu
+BEGIN
+    PULLDOWN "Options"
+    BEGIN
+        MENUITEM "About" ID MenuAbout
+    END
+END
+
+/* About dialog (also used by the Palm OS 5 stub for error messages:
+   FrmCustomAlert(1100, "error text", "", "") replaces ^1 with the error text) */
+ALERT ID AboutAlert
+INFORMATION
+BEGIN
+    TITLE "Info"
+    MESSAGE "^1"
+    BUTTONS "OK"
+END

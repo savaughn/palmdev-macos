@@ -30,3 +30,4 @@ build/
 
 # Logs
 *.log
+peal/postlink/*.dSYM/
