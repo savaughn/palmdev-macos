@@ -149,6 +149,13 @@ if ! brew tap | grep -q "jichu4n/palm-os"; then
     brew tap jichu4n/palm-os
 fi
 
+# Homebrew 6+ only loads formulae from third-party taps that are explicitly trusted.
+# Trust exactly the two formulae installed below (older Homebrew has no "trust" command).
+if brew commands --quiet | grep -qx "trust"; then
+    print_info "Trusting jichu4n/palm-os/pilrc and jichu4n/palm-os/pilot-link..."
+    brew trust --formula jichu4n/palm-os/pilrc jichu4n/palm-os/pilot-link
+fi
+
 # Install support tools
 if brew list pilrc &> /dev/null; then
     print_info "pilrc already installed"
