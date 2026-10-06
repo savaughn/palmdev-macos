@@ -1,0 +1,96 @@
+diff --git a/gcc/gcc/c-family/c-lex.cc b/gcc/gcc/c-family/c-lex.cc
+index b18b0bb0a..565da10fe 100644
+--- a/gcc/gcc/c-family/c-lex.cc
++++ b/gcc/gcc/c-family/c-lex.cc
+@@ -1821,7 +1821,12 @@ lex_charconst (const cpp_token *token)
+         type = char_type_node;
+     }
+   /* In C, a character constant has type 'int'.
+-     In C++ 'char', but multi-char charconsts have type 'int'.  */
++     In C++ 'char', but multi-char charconsts have type 'int', or 'long'
++     if they do not fit in an int (see narrow_str_to_charconst).  */
++  else if (chars_seen > 1
++	   && chars_seen * TYPE_PRECISION (char_type_node)
++	      > TYPE_PRECISION (integer_type_node))
++    type = long_integer_type_node;
+   else if (!c_dialect_cxx () || chars_seen > 1)
+     type = integer_type_node;
+   else
+diff --git a/gcc/gcc/c-family/c-opts.cc b/gcc/gcc/c-family/c-opts.cc
+index c818a0802..620bbb366 100644
+--- a/gcc/gcc/c-family/c-opts.cc
++++ b/gcc/gcc/c-family/c-opts.cc
+@@ -1382,6 +1382,7 @@ c_common_init (void)
+   cpp_opts->precision = TYPE_PRECISION (intmax_type_node);
+   cpp_opts->char_precision = TYPE_PRECISION (char_type_node);
+   cpp_opts->int_precision = TYPE_PRECISION (integer_type_node);
++  cpp_opts->long_precision = TYPE_PRECISION (long_integer_type_node);
+   cpp_opts->wchar_precision = TYPE_PRECISION (wchar_type_node);
+   cpp_opts->unsigned_wchar = TYPE_UNSIGNED (wchar_type_node);
+   cpp_opts->bytes_big_endian = BYTES_BIG_ENDIAN;
+diff --git a/gcc/libcpp/charset.cc b/gcc/libcpp/charset.cc
+index 65f5be98c..51d1a5964 100644
+--- a/gcc/libcpp/charset.cc
++++ b/gcc/libcpp/charset.cc
+@@ -2866,7 +2866,11 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
+ {
+   enum cpp_ttype type = token->type;
+   size_t width = CPP_OPTION (pfile, char_precision);
+-  size_t max_chars = CPP_OPTION (pfile, int_precision) / width;
++  /* A multi-character constant that does not fit in an int has type long
++     if long is wider (int is 16 bits with -mshort on m68k, where Palm OS
++     code uses four-character constants such as 'appl' throughout).  */
++  size_t max_chars = MAX (CPP_OPTION (pfile, int_precision),
++			  CPP_OPTION (pfile, long_precision)) / width;
+   size_t mask = width_to_mask (width);
+   size_t i;
+   cppchar_t result, c;
+@@ -2936,7 +2940,7 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
+       if (type != CPP_UTF8CHAR)
+ 	cpp_error (pfile, CPP_DL_WARNING,
+ 		   "multi-character literal with %ld characters exceeds "
+-		   "%<int%> size of %ld bytes", (long) i, (long) max_chars);
++		   "%<long%> size of %ld bytes", (long) i, (long) max_chars);
+       else if (src_chars > 2)
+ 	cpp_error (pfile, CPP_DL_ERROR,
+ 		   "multi-character literal cannot have an encoding prefix");
+@@ -2961,7 +2965,11 @@ narrow_str_to_charconst (cpp_reader *pfile, cpp_string str,
+      For single-character constants, the value is WIDTH bits wide.
+      For multi-character constants, the value is INT_PRECISION bits wide.  */
+   if (i > 1)
+-    width = CPP_OPTION (pfile, int_precision);
++    {
++      width = CPP_OPTION (pfile, int_precision);
++      if (i * CPP_OPTION (pfile, char_precision) > width)
++	width = CPP_OPTION (pfile, long_precision);
++    }
+   if (width < BITS_PER_CPPCHAR_T)
+     {
+       mask = ((cppchar_t) 1 << width) - 1;
+diff --git a/gcc/libcpp/include/cpplib.h b/gcc/libcpp/include/cpplib.h
+index bc0d7714e..6a1356e7d 100644
+--- a/gcc/libcpp/include/cpplib.h
++++ b/gcc/libcpp/include/cpplib.h
+@@ -672,6 +672,10 @@ struct cpp_options
+      ints and target wide characters, respectively.  */
+   size_t precision, char_precision, int_precision, wchar_precision;
+ 
++  /* Precision of target longs.  A multi-character constant that does not
++     fit in an int (e.g. 'appl' with -mshort) takes this width instead.  */
++  size_t long_precision;
++
+   /* True means chars (wide chars, UTF-8 chars) are unsigned.  */
+   bool unsigned_char, unsigned_wchar, unsigned_utf8char;
+ 
+diff --git a/gcc/libcpp/init.cc b/gcc/libcpp/init.cc
+index a480d1d4a..25f6a123d 100644
+--- a/gcc/libcpp/init.cc
++++ b/gcc/libcpp/init.cc
+@@ -274,6 +274,7 @@ cpp_create_reader (enum c_lang lang, cpp_hash_table *table,
+   CPP_OPTION (pfile, char_precision) = CHAR_BIT;
+   CPP_OPTION (pfile, wchar_precision) = CHAR_BIT * sizeof (int);
+   CPP_OPTION (pfile, int_precision) = CHAR_BIT * sizeof (int);
++  CPP_OPTION (pfile, long_precision) = CHAR_BIT * sizeof (long);
+   CPP_OPTION (pfile, unsigned_char) = 0;
+   CPP_OPTION (pfile, unsigned_wchar) = 1;
+   CPP_OPTION (pfile, unsigned_utf8char) = 1;

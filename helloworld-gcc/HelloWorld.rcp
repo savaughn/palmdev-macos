@@ -1,0 +1,11 @@
+/*
+ * HelloWorld (modern gcc) resource file
+ */
+
+#define MainForm 1000
+
+FORM ID MainForm AT (0 0 160 160)
+USABLE
+BEGIN
+    TITLE "Hello, gcc 16"
+END

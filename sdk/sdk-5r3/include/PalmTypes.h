@@ -201,7 +201,30 @@ typedef Int32 (*ProcPtr)();
 
 #ifdef __GNUC__
 
- #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
+ /* Modern gcc from Retro68 (m68k-gcc/ in palmdev-macos): system traps as
+    raw inline opcodes, as in Dmitry Grinberg's palmdev package (2020). The
+    nested #if keeps __has_attribute away from gcc 2.95 (prc-tools). */
+ #undef _PALM_RAW_INLINE_TRAPS
+ #ifdef __has_attribute
+  #if __has_attribute(__raw_inline__)
+   #define _PALM_RAW_INLINE_TRAPS 1
+  #endif
+ #endif
+
+ #ifdef _PALM_RAW_INLINE_TRAPS
+
+	#define _OS_CALL(table, vector)											\
+		__attribute__ ((__raw_inline__ (0x4E40 + (table), (vector))))
+
+	#define _OS_CALL_WITH_SELECTOR(table, vector, selector)			\
+		__attribute__ ((__raw_inline__ (0x7400 + (selector),			\
+			0x4E40 + (table), (vector))))
+
+	#define _OS_CALL_WITH_16BIT_SELECTOR(table, vector, selector)	\
+		__attribute__ ((__raw_inline__ (0x3F3C, (selector),			\
+			0x4E40 + (table), (vector), 0x544F)))
+
+ #elif __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
 
 	#ifndef _Str
 	#define _Str(X)  #X

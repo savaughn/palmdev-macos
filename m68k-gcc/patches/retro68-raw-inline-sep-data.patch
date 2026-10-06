@@ -1,0 +1,41 @@
+diff --git a/gcc/gcc/config/m68k/m68k.md b/gcc/gcc/config/m68k/m68k.md
+index 1d846eec1..79adcc326 100644
+--- a/gcc/gcc/config/m68k/m68k.md
++++ b/gcc/gcc/config/m68k/m68k.md
+@@ -6065,6 +6065,36 @@
+ }
+   [(set_attr "type" "jsr")])
+ 
++;; A call of a raw_inline function (Retro68), returning a value. The
++;; symbolic call patterns below require a symbolic call variant, which
++;; -msep-data and -mid-shared-library do not have (all calls go through the
++;; GOT there); raw_inline calls never refer to the symbol, so accept them
++;; regardless.
++(define_insn "*rawinline_call_value"
++  [(set (match_operand 0 "" "=rf")
++	(call (mem:QI (match_operand:SI 1 "rawinline_operand" "W"))
++	      (match_operand:SI 2 "general_operand" "g")))]
++  "!SIBLING_CALL_P (insn)"
++{
++  return output_call (operands[1]);
++}
++  [(set_attr "type" "jsr")
++   (set_attr "opx" "1")])
++
++(define_insn "*rawinline_call_value_pop"
++  [(set (match_operand 0 "" "=rf")
++	(call (mem:QI (match_operand:SI 1 "rawinline_operand" "W"))
++	      (match_operand:SI 2 "general_operand" "g")))
++   (set (reg:SI SP_REG)
++		   (plus:SI (reg:SI SP_REG)
++			    (match_operand:SI 3 "" "")))]
++  "!SIBLING_CALL_P (insn)"
++{
++  return output_call (operands[1]);
++}
++  [(set_attr "type" "jsr")
++   (set_attr "opx" "1")])
++
+ (define_insn "*non_symbolic_call_value"
+   [(set (match_operand 0 "" "=rf,rf")
+ 	(call (mem:QI (match_operand:SI 1 "non_symbolic_call_operand" "a,W"))

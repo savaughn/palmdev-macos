@@ -114,6 +114,86 @@ PEAL loads and executes ARM code on Palm OS 5. Components:
 - `peal/m68k/` - 68K loader compiled into the stub
 - `peal/arm/` - ARM entry point (`pealstub.c`, must be linked first)
 
+## Modern gcc for 68K Apps (C17 / C++17)
+
+Besides prc-tools (gcc 2.95), the repository can build a current gcc for 68K
+Palm OS apps: **gcc 16.1 and binutils 2.46 from
+[Retro68](https://github.com/autc04/Retro68)** (pinned commit), target
+`m68k-none-elf`, built natively on Apple Silicon. Retro68's gcc understands
+`__attribute__((__raw_inline__(...)))`, which `sdk/sdk-5r3/include/PalmTypes.h`
+uses for the system traps with this compiler (prc-tools keeps its `__callseq__`
+path). The approach follows Dmitry Grinberg's gcc 9.1 package for Palm OS (2020).
+
+```bash
+brew install gmp mpfr libmpc
+./m68k-gcc/build-toolchain.sh     # about 5-15 minutes, installs to m68k-gcc/toolchain/
+
+cd helloworld-gcc && make         # build/HelloGcc.prc (C++17)
+```
+
+`build-prc` comes from the prc-tools installation (`./setup-toolchain.sh`).
+New projects start from `templates/m68k-gcc/` (`Makefile`, `main.cpp`) plus
+`templates/app.rcp`; the rules live in `m68k-gcc/palmos.mk`. C and C++ files
+can be mixed.
+
+### What is in `m68k-gcc/`
+
+| Path | Purpose |
+|---|---|
+| `build-toolchain.sh` | clones Retro68 at a fixed commit, applies `patches/`, builds binutils, gcc, libgcc and the freestanding C++ headers |
+| `patches/` | small gcc fixes for Palm OS (see below) |
+| `palmos.mk` | compiler flags and build rules, included by the project Makefile |
+| `runtime/startup.c` | `__Startup__`: sets up the globals, see below |
+| `runtime/crt.c` | constructors, `PilotMain`, destructors; `memcpy` & co. for the compiler |
+| `runtime/cxxabi.cpp` | `operator new/delete` (Memory Manager), `__cxa_pure_virtual` |
+| `runtime/palmos.ld` | linker script |
+| `runtime/palm-postlink.py` | ELF to `code` resource with relocation table (Python 3) |
+| `test/` | test app: writes its results to the database `GccTestResults` |
+
+### How globals work
+
+The code resource lives in the write-protected storage heap. Code and constants
+stay there; everything writable (global offset table, `.data`, `.bss`) is
+reached through `A5`. Code is compiled with **`-msep-data`** instead of
+Dmitry's `-mpcrel -fpic` (with `-mpcrel`, globals are addressed pc-relative,
+so writable globals were not possible). At every launch `__Startup__` allocates
+the globals with `MemPtrNew`, copies their initial values from the code
+resource, applies the relocation table that `palm-postlink.py` appended,
+points `A5` at them and calls the global constructors, `PilotMain`, then the
+destructors. Only a sub-call (the app calling itself via `SysAppLaunch`) keeps
+the caller's globals. Unlike with prc-tools, globals therefore also exist in
+launches without `sysAppLaunchFlagNewGlobals` (each with fresh values).
+
+Other flags as in Dmitry's package: `-m68000 -mshort -mno-align-int
+-fshort-enums -Os -funsafe-math-optimizations`, C++ with `-fno-exceptions
+-fno-rtti -fno-threadsafe-statics`.
+
+### Things to know
+
+- `int` is 16 bits (`-mshort`), as Palm OS expects (`StrPrintF("%d")`).
+  Four-character constants such as `'appl'` have type `long` (patched gcc).
+- `PilotMain` must be `extern "C"` in C++.
+- No C library: use the Palm OS API (`StrCopy`, `MemMove`, ...). The
+  freestanding C++ headers work (`<cstdint>`, `<type_traits>`, `<array>`,
+  `<optional>`, `<algorithm>`, ...).
+- One code resource, at most 64 KB, globals at most 64 KB.
+- Calls of non-static functions and string constants go through the global
+  offset table (`-msep-data`), which costs a little speed compared with
+  prc-tools' direct `A5`/pc-relative addressing.
+
+### gcc patches (`m68k-gcc/patches/`)
+
+- `retro68-m68k-elf-pragmas.patch` - build fix: Retro68 links its Mac pragma
+  object into every m68k compiler, but builds it only for `m68k-apple-macos`.
+- `retro68-raw-inline-sep-data.patch` - `raw_inline` calls that return a value
+  crashed the compiler with `-msep-data`.
+- `retro68-raw-inline-pointers-in-a0.patch` - Palm OS traps return pointers in
+  `A0` (e.g. `MemPtrNew`, `MemHandleLock`, `FrmGetActiveForm`); gcc read `D0`.
+- `retro68-libgcc-sep-data.patch` - libgcc's assembler routines use the
+  `-msep-data` variant (no absolute addresses in code).
+- `retro68-multichar-long-with-mshort.patch` - with `-mshort`, `'appl'` was
+  truncated to 16 bits; it now has type `long`, as with CodeWarrior.
+
 ## Installing on Palm Device
 
 ### Via HotSync

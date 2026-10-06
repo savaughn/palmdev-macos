@@ -1,0 +1,49 @@
+Only in a: Oops.rej
+Only in a: Oops.rej.orig
+diff -ru a/gcc/gcc/config/m68k/m68k.cc b/gcc/gcc/config/m68k/m68k.cc
+--- a/gcc/gcc/config/m68k/m68k.cc	2026-10-06 21:42:40
++++ b/gcc/gcc/config/m68k/m68k.cc	2026-10-06 21:42:40
+@@ -6117,6 +6117,14 @@
+         return gen_rtx_REG (mode, cum.arg_regs[0]);
+     }
+ 
++#ifdef M68K_RAW_INLINE_POINTERS_IN_A0
++  /* Palm OS system traps, declared as raw_inline functions, return
++     pointers in %a0 (and other values in %d0).  */
++  if (type && POINTER_TYPE_P (valtype)
++      && lookup_attribute ("raw_inline", TYPE_ATTRIBUTES (type)))
++    return gen_rtx_REG (mode, A0_REG);
++#endif
++
+   switch (mode) {
+   case E_SFmode:
+   case E_DFmode:
+diff -ru a/gcc/gcc/config/m68k/m68kemb.h b/gcc/gcc/config/m68k/m68kemb.h
+--- a/gcc/gcc/config/m68k/m68kemb.h	2026-10-06 21:42:40
++++ b/gcc/gcc/config/m68k/m68kemb.h	2026-10-06 21:42:40
+@@ -23,8 +23,13 @@
+   m68k_libcall_value (MODE)
+ 
+ #undef FUNCTION_VALUE_REGNO_P
++#ifdef M68K_RAW_INLINE_POINTERS_IN_A0
+ #define FUNCTION_VALUE_REGNO_P(N)			\
++  ((N) == D0_REG || (N) == A0_REG || (TARGET_68881 && (N) == FP0_REG))
++#else
++#define FUNCTION_VALUE_REGNO_P(N)			\
+   ((N) == D0_REG || (TARGET_68881 && (N) == FP0_REG))
++#endif
+ 
+ #undef NEEDS_UNTYPED_CALL
+ #define NEEDS_UNTYPED_CALL 1
+diff -ru a/gcc/gcc/config.gcc b/gcc/gcc/config.gcc
+--- a/gcc/gcc/config.gcc	2026-10-06 21:42:40
++++ b/gcc/gcc/config.gcc	2026-10-06 21:42:40
+@@ -2484,6 +2484,8 @@
+ 	# m68k-mac-pragmas.o is linked into cc1/cc1plus for every m68k target
+ 	# (see m68k-*-* above); m68k/t-macos holds the rule that builds it.
+ 	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf m68k/t-macos"
++	# Palm OS system traps (raw_inline) return pointers in %a0.
++	tm_defines="${tm_defines} M68K_RAW_INLINE_POINTERS_IN_A0=1"
+ 	# Add multilibs for targets other than fido.
+ 	case ${target} in
+ 	fido-*-elf*)
